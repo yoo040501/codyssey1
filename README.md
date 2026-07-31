@@ -178,7 +178,61 @@ drwxr-xr-x  9 [USER]  [USER]  288  7 30 12:19 ..
 
 `pwd`를 통해 현재 작업 위치를 확인하고, `ls -la`를 통해 숨김 파일을 포함한 전체 목록을 확인했다.
 
+#### ls 주요 옵션
+
+| 옵션 | 의미 | 설명 |
+| --- | --- | --- |
+| `-l` | Long format | 권한, 소유자, 그룹, 크기, 수정 시간 등을 자세히 표시 |
+| `-a` | All | `.`으로 시작하는 숨김 파일을 포함하여 표시 |
+| `-d` | Directory | 디렉터리 내부가 아니라 디렉터리 자체 정보를 표시 |
+| `-h` | Human-readable | 파일 크기를 KB, MB, GB처럼 읽기 쉬운 단위로 표시 |
+| `-R` | Recursive | 하위 디렉터리의 내용까지 재귀적으로 표시 |
+| `-t` | Time | 최근 수정한 파일 순서로 정렬 |
+| `-r` | Reverse | 출력 정렬 순서를 반대로 변경 |
+
 절대 경로는 파일 시스템의 루트부터 시작하는 전체 경로이며, 상대 경로는 현재 작업 위치를 기준으로 표시하는 경로이다.
+
+### 절대 경로와 상대 경로 사용 기준
+
+**절대 경로**는 루트(`/`)부터 시작하는 전체 경로이다.
+
+```text
+/Users/[USER]/Codyssey/project1/app/index.html
+```
+
+다른 컴퓨터에는 동일한 사용자명과 폴더가 없을 수 있으므로, **공유하는 README나 스크립트에서는 개인 PC의 절대 경로를 피해야 한다.**
+
+```bash
+# 권장하지 않음
+cd /Users/[USER]/Codyssey/project1
+
+# 권장
+cd ~/Codyssey/project1
+```
+
+**상대 경로**는 현재 작업 디렉터리를 기준으로 한 경로이다.
+
+```text
+app/index.html
+```
+
+현재 위치가 다르면 잘못된 파일을 가리킬 수 있으므로, **작업 위치가 확실하지 않을 때는 상대 경로를 피해야 한다.**
+
+```bash
+pwd
+cd ~/Codyssey/project1
+cat app/index.html
+```
+
+| 상황 | 권장 경로 |
+| --- | --- |
+| 프로젝트 내부 파일 참조 | 상대 경로 |
+| README 이미지 링크 | 상대 경로 |
+| 다른 사용자와 공유하는 명령 | `~`를 사용한 경로 |
+| 시스템 파일 접근 | 절대 경로 |
+| Docker 바인드 마운트 | `$(pwd)`를 사용한 절대 경로 |
+
+> **핵심:** 절대 경로는 다른 컴퓨터에서 재현하기 어렵고, 상대 경로는 현재 작업 위치가 달라지면 잘못 동작할 수 있다.
 
 ```text
 절대 경로: /Users/[USER]/Codyssey/project1/terminal-lab
@@ -416,6 +470,9 @@ drwxr-xr-x
 | --- | --- | --- | --- |
 | 파일 | 내용 읽기 | 내용 수정 | 파일 실행 |
 | 디렉터리 | 내부 파일 이름 확인 | 내부 파일 생성·삭제 | 디렉터리 진입 및 내부 항목 접근 |
+
+
+[그룹 권한 예시](docs/permission_example.md)
 
 ## 7. 트러블슈팅
 
@@ -1419,29 +1476,475 @@ Volume mount는 컨테이너가 삭제된 후에도 데이터를 유지하기 �
 
 컨테이너를 삭제해도 Named volume을 별도로 삭제하지 않으면 데이터가 유지되는 것을 확인했다.
 
-### Bonus?
-### HTTPS와 SSH 인증 방식 비교
+## 13. Git 설정 및 GitHub 연동
 
-HTTPS 방식은 Personal Access Token 또는 브라우저 인증을 이용하여
-GitHub 사용자를 확인한다.
+### 13.1 Git과 GitHub의 역할
 
-SSH 방식은 로컬 컴퓨터에 개인키를 보관하고 GitHub에 공개키를 등록하여
-키 쌍이 일치하는지 확인한다.
+Git과 GitHub는 다음과 같은 차이가 있다.
 
-SSH는 최초 키 설정이 필요하지만, 설정 후에는 사용자명이나 토큰을
-반복해서 입력하지 않고 Git 작업을 수행할 수 있다.
+| 구분 | Git | GitHub |
+| --- | --- | --- |
+| 역할 | 로컬 버전 관리 도구 | 원격 저장소 및 협업 플랫폼 |
+| 저장 위치 | 사용자 컴퓨터 | GitHub 서버 |
+| 주요 기능 | 변경 추적, 커밋, 브랜치 관리 | 코드 공유, 백업, Pull Request, 협업 |
+| 주요 명령 및 기능 | `git add`, `git commit`, `git log` | `git push`, `git pull`, 저장소 공유 |
 
-개인키는 외부에 공개하지 않고 passphrase를 설정했으며,
-공개키만 GitHub 계정에 등록했다. 또한 사용하지 않는 키는 제거하고
-분실한 장치의 키는 즉시 폐기하는 보안 습관이 필요하다.
+Git은 로컬 컴퓨터에서 파일의 변경 이력을 관리한다.
+
+GitHub는 Git으로 관리하는 저장소를 원격 서버에 저장하고 다른 사용자와 공유할 수 있도록 제공하는 협업 플랫폼이다.
+
+### 13.2 Git 사용자 정보 및 기본 브랜치 설정
+
+Git 커밋 작성자 정보와 새로운 저장소에서 사용할 기본 브랜치를 설정했다.
+
+실행 명령:
+
 ```bash
-ssh-keygen -t ed25519 -C "본인이메일@example.com"
-# SSH 에이전트 실행
-eval "$(ssh-agent -s)"
+git config --global user.name "felix"
+git config --global user.email "[EMAIL]"
+git config --global init.defaultBranch main
+```
 
-# 키 등록
-ssh-add ~/.ssh/id_ed25519
+설정 결과를 확인했다.
 
-#등록 확인
+```bash
+git config --list
+```
+
+핵심 실행 결과:
+
+```text
+credential.helper=osxkeychain
+user.name=felix
+user.email=[EMAIL]
+init.defaultbranch=main
+core.repositoryformatversion=0
+core.filemode=true
+core.bare=false
+core.logallrefupdates=true
+core.ignorecase=true
+core.precomposeunicode=true
+remote.origin.url=git@github.com:yoo040501/codyssey1.git
+remote.origin.fetch=+refs/heads/*:refs/remotes/origin/*
+branch.main.remote=origin
+branch.main.merge=refs/heads/main
+```
+
+다음 설정을 확인할 수 있었다.
+
+| 설정 | 결과 | 의미 |
+| --- | --- | --- |
+| Git 사용자명 | `felix` | 커밋 작성자 이름 |
+| Git 이메일 | `[EMAIL]` | 커밋 작성자 이메일 |
+| 기본 브랜치 | `main` | 새로운 저장소의 기본 브랜치 |
+| 원격 저장소 | `origin` | GitHub 원격 저장소 |
+| 원격 인증 방식 | SSH | SSH 키를 사용한 인증 |
+| macOS 자격 증명 도우미 | `osxkeychain` | HTTPS 인증 정보를 macOS Keychain에 저장하는 기능 |
+
+개인 이메일 주소가 공개 문서에 노출되지 않도록 실행 결과에서는 `[EMAIL]`로 마스킹했다.
+
+현재 원격 저장소는 SSH 주소를 사용하므로 GitHub의 Push 인증은 Personal Access Token이 아니라 SSH 키로 처리된다.
+
+### 13.3 HTTPS와 SSH 인증 방식 비교
+
+GitHub 원격 저장소에는 HTTPS 또는 SSH 방식으로 연결할 수 있다.
+
+| 구분 | HTTPS | SSH |
+| --- | --- | --- |
+| 주소 형식 | `https://github.com/USER/REPOSITORY.git` | `git@github.com:USER/REPOSITORY.git` |
+| 인증 방법 | 브라우저 인증 또는 Personal Access Token | 공개키와 개인키 |
+| 초기 설정 | 비교적 간단함 | SSH 키 생성 및 등록 필요 |
+| 반복 사용 | 인증 정보 저장 필요 | 키 등록 후 편리하게 사용 |
+| 현재 프로젝트 | 사용하지 않음 | 사용 중 |
+
+SSH 방식에서는 로컬 컴퓨터에 개인키를 보관하고 GitHub 계정에는 공개키만 등록한다.
+
+```text
+로컬 Mac
+├── 개인키: 외부에 공개하지 않음
+└── 공개키: GitHub 계정에 등록
+```
+
+개인키, passphrase, 인증 토큰을 README나 Git 저장소에 포함하지 않아야 한다.
+
+컴퓨터를 분실하거나 SSH 키가 유출된 경우에는 GitHub 계정에서 해당 키를 즉시 삭제해야 한다.
+
+### 13.4 GitHub SSH 인증 확인
+
+GitHub에 등록한 공개키와 로컬 컴퓨터의 개인키를 사용하여 SSH 인증을 확인했다.
+
+실행 명령:
+
+```bash
 ssh -T git@github.com
 ```
+
+실행 결과:
+
+```text
+Hi yoo040501! You've successfully authenticated, but GitHub does not provide shell access.
+```
+
+`You've successfully authenticated` 메시지를 통해 GitHub SSH 인증이 정상적으로 완료된 것을 확인했다.
+
+`GitHub does not provide shell access`는 오류가 아니다. SSH 인증은 성공했지만 GitHub가 일반적인 서버 터미널 접속 기능을 제공하지 않는다는 의미이다.
+
+SSH 주소의 `git@github.com`에서 `git`은 이메일이나 개인 GitHub ID가 아니라 GitHub SSH 서버에서 사용하는 고정 사용자명이다.
+
+실제 GitHub 계정은 등록된 SSH 공개키를 기준으로 식별된다.
+
+### 13.5 원격 저장소 연결 확인
+
+현재 프로젝트에 등록된 원격 저장소를 확인했다.
+
+실행 명령:
+
+```bash
+git remote -v
+```
+
+실행 결과:
+
+```text
+origin  git@github.com:yoo040501/codyssey1.git (fetch)
+origin  git@github.com:yoo040501/codyssey1.git (push)
+```
+
+Fetch와 Push 주소가 모두 SSH 형식으로 설정된 것을 확인했다.
+
+| 항목 | 결과 |
+| --- | --- |
+| 원격 저장소 이름 | `origin` |
+| GitHub 사용자 | `yoo040501` |
+| 저장소 | `codyssey1` |
+| 인증 방식 | SSH |
+| Fetch 주소 | `git@github.com:yoo040501/codyssey1.git` |
+| Push 주소 | `git@github.com:yoo040501/codyssey1.git` |
+
+
+### 13.6 로컬 브랜치와 원격 브랜치 동기화 확인
+
+로컬 저장소의 상태와 원격 저장소와의 동기화 여부를 확인했다.
+
+실행 명령:
+
+```bash
+git status
+```
+
+실행 결과:
+
+```text
+현재 브랜치 main
+브랜치가 'origin/main'에 맞게 업데이트된 상태입니다.
+
+커밋할 사항 없음, 작업 폴더 깨끗함
+```
+
+현재 로컬 브랜치가 `main`이며 원격의 `origin/main`과 동일한 상태임을 확인했다.
+
+또한 커밋되지 않은 변경 사항이 없는 깨끗한 작업 상태임을 확인했다.
+
+## Bonus. GitHub SSH 키 설정 및 인증
+
+### B.1 HTTPS와 SSH 인증 방식 비교
+
+GitHub 원격 저장소에는 HTTPS와 SSH 방식으로 연결할 수 있다.
+
+| 구분 | HTTPS | SSH |
+| --- | --- | --- |
+| 주소 형식 | `https://github.com/USER/REPOSITORY.git` | `git@github.com:USER/REPOSITORY.git` |
+| 인증 방법 | 브라우저 로그인 또는 Personal Access Token | 공개키와 개인키 |
+| 초기 설정 | 비교적 간단함 | SSH 키 생성 및 GitHub 등록 필요 |
+| 반복 인증 | 인증 정보 저장 필요 | 등록한 SSH 키로 인증 |
+| 현재 프로젝트 | 사용하지 않음 | 사용 중 |
+
+HTTPS 방식은 Personal Access Token 또는 브라우저 인증을 이용하여 GitHub 사용자를 확인한다.
+
+SSH 방식은 로컬 컴퓨터에 개인키를 보관하고 GitHub 계정에 공개키를 등록한다. GitHub는 접속한 사용자가 등록된 공개키와 대응하는 개인키를 가지고 있는지 확인하여 인증한다.
+
+```text
+로컬 Mac
+├── 개인키: ~/.ssh/id_ed25519
+└── 공개키: ~/.ssh/id_ed25519.pub
+
+GitHub 계정
+└── 공개키만 등록
+```
+
+SSH는 최초 키 설정이 필요하지만, 설정 후에는 사용자명이나 Personal Access Token을 반복해서 입력하지 않고 Git 작업을 수행할 수 있다.
+
+개인키는 외부에 공개하지 않고 공개키만 GitHub에 등록해야 한다. 또한 사용하지 않는 키를 제거하고 컴퓨터를 분실하거나 키가 유출된 경우 GitHub에서 해당 키를 즉시 폐기해야 한다.
+
+### B.2 기존 SSH 키 확인
+
+새로운 SSH 키를 생성하기 전에 기존 키가 있는지 확인한다.
+
+```bash
+ls -la ~/.ssh
+```
+
+일반적으로 다음과 같은 파일이 존재한다.
+
+```text
+id_ed25519
+id_ed25519.pub
+```
+
+| 파일 | 역할 | 공개 여부 |
+| --- | --- | --- |
+| `id_ed25519` | SSH 개인키 | 절대 공개하지 않음 |
+| `id_ed25519.pub` | SSH 공개키 | GitHub 계정에 등록 |
+| `known_hosts` | 접속한 SSH 서버의 식별 정보 | 직접 수정할 필요 없음 |
+| `config` | SSH 접속 설정 | 개인키 경로 등이 포함될 수 있으므로 주의 |
+
+기존 키가 있고 GitHub 인증이 정상적으로 동작한다면 `ssh-keygen`을 다시 실행할 필요가 없다.
+
+### B.3 SSH 키 생성 방법
+
+SSH 키가 존재하지 않을 때 다음 명령으로 Ed25519 키를 생성할 수 있다.
+
+```bash
+ssh-keygen -t ed25519 -C "본인의 GitHub 이메일"
+```
+
+각 옵션의 의미는 다음과 같다.
+
+| 옵션 | 의미 |
+| --- | --- |
+| `ssh-keygen` | SSH 공개키와 개인키를 생성하는 명령 |
+| `-t ed25519` | Ed25519 알고리즘 사용 |
+| `-C` | 키를 구분하기 위한 설명 추가 |
+| 이메일 | 인증에 직접 사용되는 값이 아니라 키 식별용 설명 |
+
+다음 질문에서 기본 경로를 사용하려면 Enter를 입력한다.
+
+```text
+Enter file in which to save the key (/Users/[USER]/.ssh/id_ed25519):
+```
+
+이미 같은 이름의 키가 있다면 덮어쓰지 않아야 한다.
+
+```text
+/Users/[USER]/.ssh/id_ed25519 already exists.
+Overwrite (y/n)?
+```
+
+기존 키를 유지하려면 `n`을 입력한다.
+
+키 생성 과정에서 passphrase를 설정할 수 있다.
+
+```text
+Enter passphrase (empty for no passphrase):
+Enter same passphrase again:
+```
+
+passphrase는 GitHub 계정 비밀번호가 아니라 SSH 개인키를 보호하는 별도의 암호이다. 입력 중에 터미널에 문자가 표시되지 않는 것은 정상이다.
+
+> 현재 환경에는 이미 정상적으로 동작하는 SSH 키가 존재하므로 새로운 키를 생성하지 않고 기존 키를 사용했다.
+
+### B.4 SSH Agent에 개인키 등록
+
+SSH Agent는 개인키를 메모리에 보관하여 Git 명령을 실행할 때 사용할 수 있도록 관리한다.
+
+SSH Agent를 실행한다.
+
+```bash
+eval "$(ssh-agent -s)"
+```
+
+실행 결과 예시:
+
+```text
+Agent pid 12345
+```
+
+macOS Keychain에 키의 passphrase를 저장하면서 SSH Agent에 등록하려면 다음 명령을 사용한다.
+
+```bash
+ssh-add --apple-use-keychain ~/.ssh/id_ed25519
+```
+
+passphrase를 설정하지 않았다면 다음 명령으로도 등록할 수 있다.
+
+```bash
+ssh-add ~/.ssh/id_ed25519
+```
+
+등록된 키 목록은 다음 명령으로 확인한다.
+
+```bash
+ssh-add -l
+```
+
+`ssh-add -l`은 등록된 키의 지문과 알고리즘을 표시하며 개인키 내용 자체를 출력하지 않는다.
+
+### B.5 GitHub에 공개키 등록
+
+macOS에서 공개키 내용을 클립보드에 복사한다.
+
+```bash
+pbcopy < ~/.ssh/id_ed25519.pub
+```
+
+이 명령은 `.pub`이 붙은 공개키만 복사한다.
+
+GitHub에서 다음 경로로 이동한다.
+
+```text
+GitHub
+→ Settings
+→ SSH and GPG keys
+→ New SSH key
+```
+
+다음과 같이 입력한다.
+
+```text
+Title: Mac-OrbStack
+Key type: Authentication Key
+Key: 클립보드에 복사한 공개키
+```
+
+개인키인 `~/.ssh/id_ed25519`은 GitHub, README, 메신저 또는 원격 저장소에 절대 올리지 않는다.
+
+### B.6 GitHub SSH 인증 확인
+
+등록한 SSH 키로 GitHub 인증이 가능한지 확인한다.
+
+```bash
+ssh -T git@github.com
+```
+
+실행 결과:
+
+```text
+Hi yoo040501! You've successfully authenticated, but GitHub does not provide shell access.
+```
+
+`You've successfully authenticated`가 출력됐으므로 SSH 인증이 정상적으로 완료된 것을 확인했다.
+
+`GitHub does not provide shell access`는 오류가 아니다. GitHub SSH 인증에는 성공했지만 GitHub 서버에 일반 터미널로 접속하는 기능은 제공되지 않는다는 의미이다.
+
+SSH 주소는 다음 형식을 사용한다.
+
+```text
+git@github.com
+│   └──────── 접속할 GitHub 서버 주소
+└──────────── GitHub SSH 서버에서 사용하는 고정 사용자명
+```
+
+`git` 대신 이메일이나 개인 GitHub 사용자명을 입력하지 않는다. GitHub는 등록된 SSH 공개키를 통해 실제 계정이 `yoo040501`임을 확인한다.
+
+### B.7 Git 저장소를 SSH 주소로 연결
+
+SSH 인증에 성공했더라도 Git 원격 저장소 주소가 HTTPS이면 Git Push는 HTTPS 방식으로 실행된다.
+
+현재 원격 저장소 주소를 확인한다.
+
+```bash
+git remote -v
+```
+
+현재 프로젝트의 실행 결과:
+
+```text
+origin  git@github.com:yoo040501/codyssey1.git (fetch)
+origin  git@github.com:yoo040501/codyssey1.git (push)
+```
+
+원격 저장소 주소가 `git@github.com`으로 시작하므로 Fetch와 Push 모두 SSH 인증 방식을 사용한다.
+
+기존 원격 저장소가 HTTPS로 설정되어 있다면 다음 명령으로 SSH 주소로 변경할 수 있다.
+
+```bash
+git remote set-url origin git@github.com:yoo040501/codyssey1.git
+```
+
+변경 후 다시 확인한다.
+
+```bash
+git remote -v
+```
+
+새 원격 저장소를 처음 등록하는 경우에는 다음 명령을 사용한다.
+
+```bash
+git remote add origin git@github.com:yoo040501/codyssey1.git
+```
+
+`origin`이 이미 존재하는 저장소에서 `git remote add origin`을 다시 실행하면 오류가 발생하므로 이때는 `git remote set-url`을 사용한다.
+
+### B.8 SSH를 사용한 Git Push
+
+변경 파일을 확인한다.
+
+```bash
+git status
+```
+
+파일을 스테이징하고 커밋한다.
+
+```bash
+git add .
+git commit -m "docs: add GitHub SSH verification"
+```
+
+SSH로 연결된 원격 저장소에 Push한다.
+
+```bash
+git push -u origin main
+```
+
+각 항목의 의미는 다음과 같다.
+
+| 항목 | 의미 |
+| --- | --- |
+| `git push` | 로컬 커밋을 원격 저장소로 전송 |
+| `-u` | 로컬 브랜치와 원격 브랜치의 추적 관계 설정 |
+| `origin` | 원격 저장소 이름 |
+| `main` | Push할 브랜치 |
+
+최초 Push에서 추적 관계를 설정한 후에는 다음부터 간단하게 실행할 수 있다.
+
+```bash
+git push
+```
+
+최종 상태를 확인한다.
+
+```bash
+git status
+git remote -v
+```
+
+실행 결과:
+
+```text
+현재 브랜치 main
+브랜치가 'origin/main'에 맞게 업데이트된 상태입니다.
+
+커밋할 사항 없음, 작업 폴더 깨끗함
+```
+
+```text
+origin  git@github.com:yoo040501/codyssey1.git (fetch)
+origin  git@github.com:yoo040501/codyssey1.git (push)
+```
+
+로컬 `main` 브랜치가 원격 `origin/main`과 동기화됐으며, SSH 주소를 통해 GitHub 저장소에 연결된 것을 확인했다.
+
+### B.9 SSH 보안 습관
+
+SSH 키를 안전하게 사용하기 위해 다음 사항을 준수한다.
+
+- GitHub에는 `.pub`이 붙은 공개키만 등록한다.
+- 개인키인 `id_ed25519`은 외부에 공개하지 않는다.
+- 개인키를 Git 저장소에 커밋하지 않는다.
+- 가능하면 SSH 키에 passphrase를 설정한다.
+- passphrase는 macOS Keychain과 SSH Agent를 통해 관리한다.
+- 처음 접속하는 SSH 서버는 서버 지문을 확인한다.
+- 사용하지 않는 SSH 키는 GitHub 계정에서 제거한다.
+- 컴퓨터를 분실하거나 개인키가 유출되면 해당 키를 즉시 폐기한다.
+- 사용자별·장치별로 키를 구분하여 사용한다.
+- README와 캡처 화면에 개인키, 토큰 및 passphrase를 노출하지 않는다.
