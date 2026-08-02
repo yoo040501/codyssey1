@@ -472,7 +472,7 @@ drwxr-xr-x
 | 디렉터리 | 내부 파일 이름 확인 | 내부 파일 생성·삭제 | 디렉터리 진입 및 내부 항목 접근 |
 
 
-[그룹 권한 예시](docs/permission_example.md)
+[그룹 권한 예시](docs/permission_example.png)
 
 ## 7. 트러블슈팅
 
