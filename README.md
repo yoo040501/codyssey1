@@ -472,7 +472,7 @@ drwxr-xr-x
 | 디렉터리 | 내부 파일 이름 확인 | 내부 파일 생성·삭제 | 디렉터리 진입 및 내부 항목 접근 |
 
 
-![바인드 마운트 변경 반영 결과](docs/images/permission_example.png)
+![바인드 마운트 변경 반영 결과](docs/images/example1.png)
 
 ## 7. 트러블슈팅
 
